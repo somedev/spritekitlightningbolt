@@ -15,6 +15,7 @@
 		64928DDA1FB10B0F0024DD6E /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 64928DD81FB10B0F0024DD6E /* Main.storyboard */; };
 		64928DDC1FB10B0F0024DD6E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 64928DDB1FB10B0F0024DD6E /* Assets.xcassets */; };
 		64928DDF1FB10B0F0024DD6E /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 64928DDD1FB10B0F0024DD6E /* LaunchScreen.storyboard */; };
+		64928DE71FB10BE20024DD6E /* lightning.fsh in Resources */ = {isa = PBXBuildFile; fileRef = 64928DE61FB10BE20024DD6E /* lightning.fsh */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,6 +29,7 @@
 		64928DDB1FB10B0F0024DD6E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		64928DDE1FB10B0F0024DD6E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		64928DE01FB10B0F0024DD6E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		64928DE61FB10BE20024DD6E /* lightning.fsh */ = {isa = PBXFileReference; explicitFileType = sourcecode.c; path = lightning.fsh; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +64,7 @@
 			children = (
 				64928DCE1FB10B0F0024DD6E /* AppDelegate.swift */,
 				64928DD01FB10B0F0024DD6E /* GameScene.sks */,
+				64928DE61FB10BE20024DD6E /* lightning.fsh */,
 				64928DD21FB10B0F0024DD6E /* Actions.sks */,
 				64928DD41FB10B0F0024DD6E /* GameScene.swift */,
 				64928DD61FB10B0F0024DD6E /* GameViewController.swift */,
@@ -136,6 +139,7 @@
 				64928DD11FB10B0F0024DD6E /* GameScene.sks in Resources */,
 				64928DDC1FB10B0F0024DD6E /* Assets.xcassets in Resources */,
 				64928DDF1FB10B0F0024DD6E /* LaunchScreen.storyboard in Resources */,
+				64928DE71FB10BE20024DD6E /* lightning.fsh in Resources */,
 				64928DD31FB10B0F0024DD6E /* Actions.sks in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
