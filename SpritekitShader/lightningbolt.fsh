@@ -1,161 +1,83 @@
 
-uniform float offset, amp, speed, l_scale, h_scale, y_scale, noOfBolts;
-uniform float gamma;
-uniform float brightness, tint, contrast;
-uniform bool locked;
-uniform vec3 tint_col;
-uniform vec2 posA;
-uniform vec2 posB;
-uniform vec2 posC;
-uniform sampler2D Strength;
+const int detail_steps_ = 6;
+const vec3 mod3_ = vec3(.1031, .11369, .13787);
 
-float p1=(posA.y-0.5)*3.33;
-float p5=(posB.y-0.5)*6.66;
-float p10=(posC.y-0.5);
-
-const int iteration = 7;
-
-float time = adsk_time *.01 * speed + offset;
-const vec3 LumCoeff = vec3(0.2125, 0.7154, 0.0721);
-
-
-// https://www.shadertoy.com/view/Mds3W7
-// Lightning shader
-// rand,noise,fmb functions from https://www.shadertoy.com/view/Xsl3zN
-// jerome
-// additionl stuff http://humus.name/index.php?page=3D&ID=35
-
-float rand(vec2 n) {
-    return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
+vec3 hash3_3(vec3 p3) {
+    p3 = fract(p3 * mod3_);
+    p3 += dot(p3, p3.yxz + 19.19);
+    return -1. + 2. * fract(vec3((p3.x + p3.y) * p3.z, (p3.x+p3.z) * p3.y, (p3.y+p3.z) * p3.x));
 }
 
-float noise(vec2 n) {
-    vec2 d = vec2(0.0, 1.0);
-    vec2 b = floor(n), f = smoothstep(vec2(0.0), vec2(1.0), fract(n));
-    return mix(mix(rand(b), rand(b + d.yx), f.x), mix(rand(b + d.xy), rand(b + d.yy), f.x), f.y);
+float perlin_noise3(vec3 p) {
+    vec3 pi = floor(p);
+    vec3 pf = p - pi;
+    
+    vec3 w = pf * pf * (3. - 2. * pf);
+    
+    return     mix(
+                   mix(
+                       mix(
+                           dot(pf - vec3(0, 0, 0), hash3_3(pi + vec3(0, 0, 0))),
+                           dot(pf - vec3(1, 0, 0), hash3_3(pi + vec3(1, 0, 0))),
+                           w.x),
+                       mix(
+                           dot(pf - vec3(0, 0, 1), hash3_3(pi + vec3(0, 0, 1))),
+                           dot(pf - vec3(1, 0, 1), hash3_3(pi + vec3(1, 0, 1))),
+                           w.x),
+                       w.z),
+                   mix(
+                       mix(
+                           dot(pf - vec3(0, 1, 0), hash3_3(pi + vec3(0, 1, 0))),
+                           dot(pf - vec3(1, 1, 0), hash3_3(pi + vec3(1, 1, 0))),
+                           w.x),
+                       mix(
+                           dot(pf - vec3(0, 1, 1), hash3_3(pi + vec3(0, 1, 1))),
+                           dot(pf - vec3(1, 1, 1), hash3_3(pi + vec3(1, 1, 1))),
+                           w.x),
+                       w.z),
+                   w.y);
 }
 
-float fbm(vec2 n) {
-    float total = 0.0, amplitude = 1.0;
-    for (int i = 0; i < iteration; i++) {
-        total += noise(n) * amplitude;
-        n += n;
-        amplitude *= 0.5 * amp;
+
+float noise_sum_abs3(vec3 p) {
+    float f = 0.;
+    p = p * 3.;
+    f += 1.0000 * abs(perlin_noise3(p)); p = 2. * p;
+    f += 0.5000 * abs(perlin_noise3(p)); p = 3. * p;
+    f += 0.2500 * abs(perlin_noise3(p)); p = 4. * p;
+    f += 0.1250 * abs(perlin_noise3(p)); p = 5. * p;
+//    f += 0.0625 * abs(perlin_noise3(p)); p = 6. * p;
+    
+    return f;
+}
+
+vec2 domain(vec2 uv, float s) {
+    return (2.*uv.xy-u_sprite_size.xy) / u_sprite_size.y*s;
+}
+
+void main(void) {
+
+    vec2 poi = vec2(.5, .5);
+    float size = 10.;
+    vec2 p = ((size * v_tex_coord.xy) - poi*vec2(size,size));
+    p = p * vec2(u_sprite_size.x / u_sprite_size.y, 1.);
+    float electric_density = .9;
+    float electric_radius  = length(p) - .4;
+    float velocity = 1.1;
+    
+    float moving_coord = velocity * u_time;
+    vec3  electric_local_domain = vec3(p, moving_coord);
+    float electric_field = electric_density * noise_sum_abs3(electric_local_domain);
+    
+    vec3 col = vec3(107, 148, 196) / 255.;
+    col += (1. - (electric_field + electric_radius));
+    for(int i = 0; i < detail_steps_; i++) {
+        if(length(col) >= 3.1 + float(i) / 2.)
+            col -= .3;
     }
-    return total;
+    col += 1. - 4.2*electric_field;
+    
+    float alpha = 1.;
+    gl_FragColor = vec4(col, alpha);
 }
 
-/* discontinuous pseudorandom uniformly distributed in [-0.5, +0.5]^3 */
-vec3 random3(vec3 c) {
-	float j = 4096.0*sin(dot(c,vec3(17.0, 59.4, 15.0)));
-	vec3 r;
-	r.z = fract(512.0*j);
-	j *= .125;
-	r.x = fract(512.0*j);
-	j *= .125;
-	r.y = fract(512.0*j);
-	return r-0.5;
-}
-
-/* skew constants for 3d simplex functions */
-const float F3 =  0.3333333;
-const float G3 =  0.1666667;
-
-/* 3d simplex noise */
-float simplex3d(vec3 p) {
-	 /* 1. find current tetrahedron T and it's four vertices */
-	 /* s, s+i1, s+i2, s+1.0 - absolute skewed (integer) coordinates of T vertices */
-	 /* x, x1, x2, x3 - unskewed coordinates of p relative to each of T vertices*/
-	 
-	 /* calculate s and x */
-	 vec3 s = floor(p + dot(p, vec3(F3)));
-	 vec3 x = p - s + dot(s, vec3(G3));
-	 
-	 /* calculate i1 and i2 */
-	 vec3 e = step(vec3(0.0), x - x.yzx);
-	 vec3 i1 = e*(1.0 - e.zxy);
-	 vec3 i2 = 1.0 - e.zxy*(1.0 - e);
-	 	
-	 /* x1, x2, x3 */
-	 vec3 x1 = x - i1 + G3;
-	 vec3 x2 = x - i2 + 2.0*G3;
-	 vec3 x3 = x - 1.0 + 3.0*G3;
-	 
-	 /* 2. find four surflets and store them in d */
-	 vec4 w, d;
-	 
-	 /* calculate surflet weights */
-	 w.x = dot(x, x);
-	 w.y = dot(x1, x1);
-	 w.z = dot(x2, x2);
-	 w.w = dot(x3, x3);
-	 
-	 /* w fades from 0.6 at the center of the surflet to 0.0 at the margin */
-	 w = max(0.6 - w, 0.0);
-	 
-	 /* calculate surflet components */
-	 d.x = dot(random3(s), x);
-	 d.y = dot(random3(s + i1), x1);
-	 d.z = dot(random3(s + i2), x2);
-	 d.w = dot(random3(s + 1.0), x3);
-	 
-	 /* multiply d by w^4 */
-	 w *= w;
-	 w *= w;
-	 d *= w;
-	 
-	 /* 3. return the sum of the four surflets */
-	 return dot(d, vec4(52.0));
-}
-
-float noise22(vec3 m) {
-    return   0.5333333*simplex3d(m)
-			+0.2666667*simplex3d(2.0*m)
-			+0.1333333*simplex3d(4.0*m)
-			+0.0666667*simplex3d(8.0*m);
-}
-
-
-float bolt(float shift){
-    vec2 uv = v_tex_coord;
-	float s = texture2D(Strength, uv).r;
-    vec2 t = uv * vec2(2.0,1.0) - (time + shift * 10.0)*3.0;
-    vec3 p3 = vec3(uv, time * 5.0 + shift);    
-    float ycenter = 0.0;
-	float brightness_scale = 1.0;
-	
-	float diff = 0.0;
-	if ( locked )
-	{
-		ycenter = mix( p1*(1.0-uv.x)+p5*uv.x , -20. + 0.5 * noise22(vec3(p3*y_scale * s)) + fbm(t)*20.0, uv.x * y_scale * s);
-		float a = clamp((uv.x * -uv.x * 0.15) + 0.15, 0., 1.);   
-		diff = abs(amp*2.0*ycenter * -a + uv.y - 0.5 - p10*uv.x );
-		brightness_scale = 2.0;                  
-   }
-   else
-   {
-       float ycenter = fbm(t)*0.5;
-	   diff = abs(uv.y - ycenter);
-   }
-    float hi_col = clamp ((0.5 - diff  / h_scale * 100. * brightness_scale), 0.0, 1.0);
-	float low_col = clamp ((0.5 - diff  / l_scale * 10. * brightness_scale), 0.0, 1.0);
-	return mix(low_col, hi_col, 0.5 );
-
-    }
-
-void main(void)
-{
-	float lightning = 0.0;
-	for(float i = 0.0; i < noOfBolts; i++)
-	{
-    	lightning += bolt(i);
-	}
-
-	vec3 avg_lum = vec3(0.5, 0.5, 0.5);
-	vec3 col = pow(vec3(lightning), vec3(1.0 / (gamma - 0.5)));
-	vec3 intensity = vec3(dot(col.rgb, LumCoeff));
-	vec3 con_color = mix(avg_lum, intensity, contrast);
-	vec3 brt_color = con_color - 1.0 + brightness;
-	vec3 fin_color = mix(brt_color, brt_color * tint_col, tint);
-	gl_FragColor = vec4(fin_color * 5., 1.0);
-}

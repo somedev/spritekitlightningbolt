@@ -20,23 +20,11 @@ class GameScene: SKScene {
         node.size = size
         node.position = CGPoint(x: size.width / 2, y: size.height / 2)
         
+        let spriteSize = vector_float2(Float(node.frame.size.width),
+                                       Float(node.frame.size.height))
+        
         let uniforms:[SKUniform] = [
-            SKUniform(name: "offset", float: 0),
-            SKUniform(name: "amp", float: 1.0),
-            SKUniform(name: "speed", float: 0.8),
-            SKUniform(name: "l_scale", float: 1.0),
-            SKUniform(name: "h_scale", float: 1.0),
-            SKUniform(name: "y_scale", float: 0.2),
-            SKUniform(name: "noOfBolts", float: 5),
-            SKUniform(name: "gamma", float: 1.0),
-            SKUniform(name: "brightness", float: 1.0),
-            SKUniform(name: "tint", float: 0.75),
-            SKUniform(name: "contrast", float: 1.0),
-            SKUniform(name: "locked", float: 1),
-            SKUniform(name: "tint_col", vectorFloat3: vector_float3([0.3, 0.6, 1.0])),
-            SKUniform(name: "posA", vectorFloat2: vector_float2([0, 0.5])),
-            SKUniform(name: "posB", vectorFloat2: vector_float2([0.7, 0.5])),
-            SKUniform(name: "posC", vectorFloat2: vector_float2([1.0, 0.5]))
+            SKUniform(name: "u_sprite_size", vectorFloat2: spriteSize)
         ]
         
         guard let shaderFile = Bundle.main.path(forResource: "lightningbolt", ofType: "fsh") else {
